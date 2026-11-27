@@ -35,7 +35,7 @@ Informatizar a triagem e a organização das filas de uma clínica de especialid
 
 ## 3. Estruturas de dados utilizadas
 
-- `struct Paciente`: dados informados no cadastro.
+- `struct Paciente`: dados informados no cadastro (definida em `tipos.h`, assim como as demais estruturas).
 - `struct Senha`: código, categoria e paciente.
 - `struct Fila`: **fila circular** de capacidade fixa (100 senhas aguardando por categoria), com `inicio` e `quantidade`.
 - `struct Sistema`: três filas (uma por categoria), contadores de senha, senha atual e total de atendidos.
@@ -43,10 +43,24 @@ Informatizar a triagem e a organização das filas de uma clínica de especialid
 
 ## 4. Compilação e execução
 
-Requisito: compilador C (GCC, MinGW ou Clang).
+Requisito: compilador C (GCC, MinGW ou Clang). O projeto tem vários arquivos, então todos os `.c` precisam ser compilados juntos.
+
+**Opção A – direto com o GCC (funciona em qualquer sistema):**
 
 ```bash
-gcc -std=c99 -Wall -Wextra -pedantic -o clinica main.c
+gcc -std=c99 -Wall -Wextra -pedantic -o clinica main.c entrada.c paciente.c fila.c atendimento.c painel.c
+```
+
+**Opção B – com o Makefile (Linux, macOS ou MinGW com `make`):**
+
+```bash
+make          # compila
+make clean    # remove os arquivos gerados
+```
+
+**Execução:**
+
+```bash
 ./clinica          # Linux / macOS
 clinica.exe        # Windows
 ```
@@ -55,30 +69,46 @@ Para finalizar, use a opção `0` do menu.
 
 > As mensagens do programa não usam acentos de propósito, para evitar caracteres quebrados em terminais Windows.
 
-## 5. Funções implementadas
+## 5. Organização em módulos e funções implementadas
 
-| Função | Responsabilidade |
+O programa é dividido em módulos (pares `.h`/`.c`), cada um com uma responsabilidade. A `main()` apenas coordena o fluxo: mostra o menu, lê a opção e chama a função correspondente.
+
+| Módulo | Responsabilidade |
 |---|---|
-| `main` | Coordena o fluxo: exibe o menu, lê a opção e chama a função correspondente |
-| `exibirMenu` | Mostra o menu de opções |
-| `lerLinha` | Lê uma linha com segurança (`fgets`), descarta excesso e trata fim de entrada |
-| `lerInteiro` | Lê e valida um inteiro dentro de um intervalo |
-| `lerSimNao` | Lê e valida resposta S/N |
-| `lerGenero` | Lê e valida gênero M/F |
-| `cadastrarPaciente` | Coleta os dados do paciente |
-| `classificarPaciente` | Define a categoria (urgente, preferencial ou normal) |
-| `gerarSenha` | Emite a senha sequencial e a insere na fila da categoria |
-| `inicializarSistema` | Zera filas, contadores e estado |
-| `filaVazia` / `filaCheia` | Verificam o estado de uma fila |
-| `enfileirar` / `desenfileirar` | Inserem e removem senhas (FIFO) |
-| `proximaCategoria` | Aplica a precedência U > P > N para achar a próxima fila |
-| `totalEmEspera` | Soma os pacientes em espera |
-| `registrarSenha` | Operação do menu: cadastra e emite a senha |
-| `consultarProxima` | Mostra a próxima senha sem retirá-la da fila |
-| `chamarProximo` | Retira a próxima senha da fila e a coloca em atendimento |
-| `identificarEmAtendimento` | Mostra a senha em atendimento |
-| `finalizarAtendimento` | Conclui o atendimento e informa a próxima senha |
-| `exibirPainel` | Mostra o painel de chamada |
+| `tipos.h` | Constantes e estruturas de dados compartilhadas (`Paciente`, `Senha`, `Fila`, `Sistema`, `Categoria`) |
+| `entrada.c/.h` | Leitura e validação das entradas do usuário |
+| `paciente.c/.h` | Cadastro do paciente e classificação em categorias |
+| `fila.c/.h` | Fila circular FIFO de senhas |
+| `atendimento.c/.h` | Emissão de senhas e controle do atendimento |
+| `painel.c/.h` | Apresentação do menu e do painel de chamada |
+| `main.c` | Fluxo principal (menu e `switch`) |
+
+### Funções por módulo
+
+| Módulo | Função | Responsabilidade |
+|---|---|---|
+| `main.c` | `main` | Coordena o fluxo: exibe o menu, lê a opção e chama a função correspondente |
+| `entrada.c` | `lerLinha` | Lê uma linha com segurança (`fgets`), descarta o excesso e trata fim de entrada |
+| `entrada.c` | `lerInteiro` | Lê e valida um inteiro dentro de um intervalo |
+| `entrada.c` | `lerSimNao` | Lê e valida resposta S/N |
+| `entrada.c` | `lerGenero` | Lê e valida gênero M/F |
+| `paciente.c` | `cadastrarPaciente` | Coleta os dados do paciente |
+| `paciente.c` | `classificarPaciente` | Define a categoria (urgente, preferencial ou normal) |
+| `paciente.c` | `nomeCategoria` / `prefixoCategoria` | Devolvem o nome ("Urgente") e a letra (`U`) de uma categoria |
+| `fila.c` | `filaVazia` / `filaCheia` | Verificam o estado de uma fila |
+| `fila.c` | `enfileirar` / `desenfileirar` | Inserem e removem senhas (FIFO) |
+| `fila.c` | `itemDaFila` | Consulta uma posição da fila sem removê-la |
+| `atendimento.c` | `inicializarSistema` | Zera filas, contadores e estado |
+| `atendimento.c` | `proximaCategoria` | Aplica a precedência U > P > N para achar a próxima fila |
+| `atendimento.c` | `totalEmEspera` | Soma os pacientes em espera |
+| `atendimento.c` | `gerarSenha` | Emite a senha sequencial e a insere na fila da categoria |
+| `atendimento.c` | `registrarSenha` | Operação do menu: cadastra o paciente e emite a senha |
+| `atendimento.c` | `consultarProxima` | Mostra a próxima senha sem retirá-la da fila |
+| `atendimento.c` | `chamarProximo` | Retira a próxima senha da fila e a coloca em atendimento |
+| `atendimento.c` | `identificarEmAtendimento` | Mostra a senha em atendimento |
+| `atendimento.c` | `finalizarAtendimento` | Conclui o atendimento e informa a próxima senha |
+| `painel.c` | `exibirMenu` | Mostra o menu de opções |
+| `painel.c` | `exibirPainel` | Mostra o painel de chamada |
 
 ## 6. Exemplos de utilização
 
@@ -161,14 +191,18 @@ Idade: 200
 | Homem, 30 anos, sem condições | `N001` | OK |
 | Mulher, 70 anos | `P001` (mulher 60+) | OK |
 | Homem, 64 anos, sem condições | Normal | OK |
+| Mulher, 59 anos, sem condições | Normal | OK |
+| Mulher, 60 anos | Preferencial | OK |
 | Homem, 65 anos | Preferencial | OK |
 | Mulher gestante, 25 anos | Preferencial | OK |
 | Qualquer paciente com 81 anos | `U001` | OK |
-| Paciente com exatamente 80 anos | Não é urgente (regra: superior a 80) | OK |
+| Mulher com exatamente 80 anos | Preferencial (não é urgente: a regra exige superior a 80) | OK |
+| Homem com exatamente 80 anos | Preferencial (65+), não urgente | OK |
 | Chamar com a fila vazia | Mensagem de aviso | OK |
 | Chamar com atendimento em andamento | Bloqueado | OK |
 | Finalizar sem atendimento | Mensagem de aviso | OK |
 | Idade `abc`, `200`, gênero `X`, opção `9` | Nova solicitação com mensagem de erro | OK |
+| 101 pacientes normais | A 101ª senha é recusada (fila cheia, limite de 100) | OK |
 | Numeração por categoria | `N001, N002`, `P001, P002`, `U001, U002` independentes | OK |
 
 ## 8. Estrutura do repositório
@@ -176,6 +210,13 @@ Idade: 200
 ```
 .
 ├── main.c
+├── tipos.h
+├── entrada.c / entrada.h
+├── paciente.c / paciente.h
+├── fila.c / fila.h
+├── atendimento.c / atendimento.h
+├── painel.c / painel.h
+├── Makefile
 ├── README.md
 └── .gitignore
 ```
